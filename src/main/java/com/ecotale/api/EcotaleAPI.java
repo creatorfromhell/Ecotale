@@ -383,4 +383,15 @@ public final class EcotaleAPI {
             );
         }
     }
+    
+    /**
+     * Cleanup expired rate limiter buckets.
+     * Called periodically by EconomyManager to prevent memory growth.
+     * NOT rate limited.
+     */
+    public static void cleanupRateLimiter() {
+        if (rateLimiter != null) {
+            rateLimiter.cleanup();
+        }
+    }
 }

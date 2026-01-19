@@ -406,6 +406,9 @@ public class EconomyManager {
                 if (System.currentTimeMillis() - lastLockCleanup > LOCK_CLEANUP_INTERVAL_MS) {
                     cleanupStaleLocks();
                     lastLockCleanup = System.currentTimeMillis();
+                    
+                    // PERF-04: Cleanup API rate limiter buckets (MEMORY LEAK FIX)
+                    com.ecotale.api.EcotaleAPI.cleanupRateLimiter();
                 }
             } catch (InterruptedException e) {
                 break;

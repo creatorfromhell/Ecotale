@@ -142,13 +142,25 @@ public abstract class SimpleHud extends CustomUIHud {
 
     /**
      * Push all pending updates to the client.
+     * Always uses show() to ensure HUD is properly displayed.
+     * Wrapped in try-catch to prevent crashes from propagating (e.g., MultipleHUD issues).
      */
     public void pushUpdates() {
         try {
             this.show();
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Failed to push HUD updates for path: " + uiPath, e);
+            // Catch ALL exceptions to prevent crash from propagating
+            // This handles MultipleHUD's RuntimeException and other issues
+            LOGGER.log(Level.WARNING, "Failed to push HUD updates for path: " + uiPath + " - " + e.getMessage());
         }
+    }
+    
+    /**
+     * Force full rebuild of the HUD.
+     * Same as pushUpdates() but with explicit naming.
+     */
+    public void forceFullRebuild() {
+        pushUpdates();
     }
 
     @Override
