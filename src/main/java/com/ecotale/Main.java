@@ -7,6 +7,10 @@ import com.ecotale.commands.PayCommand;
 import com.ecotale.config.EcotaleConfig;
 import com.ecotale.economy.EconomyManager;
 import com.ecotale.hud.BalanceHud;
+import com.ecotale.lib.vaultunlocked.VaultUnlockedPlugin;
+import com.hypixel.hytale.common.plugin.PluginIdentifier;
+import com.hypixel.hytale.common.semver.SemverRange;
+import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.event.events.player.AddPlayerToWorldEvent;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
@@ -34,7 +38,7 @@ public class Main extends JavaPlugin {
     
     private EconomyManager economyManager;
     
-    public Main(@NonNullDecl JavaPluginInit init) {
+    public Main(@NonNullDecl final JavaPluginInit init) {
         super(init);
         CONFIG = this.withConfig("Ecotale", EcotaleConfig.CODEC);
     }
@@ -54,6 +58,9 @@ public class Main extends JavaPlugin {
             CONFIG.get().getRateLimitBurst(),
             CONFIG.get().getRateLimitRefill()
         );
+
+        // Check for VaultUnlocked support
+        initVaultUnlocked();
         
         // Check for MultipleHUD compatibility
         com.ecotale.util.HudHelper.init();
@@ -65,22 +72,22 @@ public class Main extends JavaPlugin {
         
         // Register player join event for HUD setup
         this.getEventRegistry().registerGlobal(AddPlayerToWorldEvent.class, (event) -> {
-            var player = event.getHolder().getComponent(Player.getComponentType());
-            var playerRef = event.getHolder().getComponent(PlayerRef.getComponentType());
+            final var player = event.getHolder().getComponent(Player.getComponentType());
+            final var playerRef = event.getHolder().getComponent(PlayerRef.getComponentType());
             
             if (player != null && playerRef != null) {
                 // Ensure player has an account
                 this.economyManager.ensureAccount(playerRef.getUuid());
                 
                 // Cache player name for leaderboards (H2 only)
-                var h2Storage = this.economyManager.getH2Storage();
+                final var h2Storage = this.economyManager.getH2Storage();
                 if (h2Storage != null) {
                     h2Storage.updatePlayerName(playerRef.getUuid(), playerRef.getUsername());
                 }
                 
                 // Setup Balance HUD if enabled
                 if (Main.CONFIG.get().isEnableHudDisplay()) {
-                    BalanceHud hud = new BalanceHud(playerRef);
+                    final BalanceHud hud = new BalanceHud(playerRef);
                     com.ecotale.util.HudHelper.setCustomHud(player, playerRef, hud);
                     com.ecotale.systems.BalanceHudSystem.registerHud(playerRef.getUuid(), hud);
                 }
@@ -88,6 +95,20 @@ public class Main extends JavaPlugin {
         });
 
         this.getLogger().at(Level.INFO).log("Ecotale Economy loaded - HUD balance display active!");
+    }
+
+    private void initVaultUnlocked() {
+        if (HytaleServer.get().getPluginManager().hasPlugin(
+                PluginIdentifier.fromString("TheNewEconomy:VaultUnlocked"),
+                SemverRange.WILDCARD
+                                                           )) {
+            this.getLogger().atInfo().log("VaultUnlocked is installed, enabling VaultUnlocked support.");
+
+            VaultUnlockedPlugin.setup(this.getLogger());
+
+        } else {
+            this.getLogger().at(Level.INFO).log("VaultUnlocked is not installed, disabling VaultUnlocked support.");
+        }
     }
     
     @Override
